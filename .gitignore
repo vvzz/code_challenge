@@ -21,3 +21,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+**/.firebase
+**/.firebaserc
+**/.runtimeconfig.json
+**/ui-debug.log
+**/database-debug.log
+**/firestore-debug.log
+**/firebase-debug.log
+**/pubsub-debug.log
+.idea
