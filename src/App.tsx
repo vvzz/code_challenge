@@ -7,7 +7,7 @@ import "./App.css";
 import { Auth, getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import * as TE from "fp-ts/TaskEither";
 import * as E from "fp-ts/Either";
-import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
+import { Container, Nav, Navbar } from "react-bootstrap";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
