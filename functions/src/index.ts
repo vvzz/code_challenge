@@ -5,11 +5,13 @@ import * as cors from "cors";
 import * as admin from "firebase-admin";
 import { flow, pipe } from "fp-ts/function";
 import * as C from "io-ts/Codec";
+import { DecodeError } from "io-ts/Decoder";
 import * as D from "io-ts/Decoder";
 import * as O from "fp-ts/Option";
 import * as En from "io-ts/Encoder";
 import * as E from "fp-ts/Either";
 import * as RTE from "fp-ts/ReaderTaskEither";
+import * as RT from "fp-ts/ReaderTask";
 import * as TE from "fp-ts/TaskEither";
 import { Firestore } from "firebase-admin/firestore";
 
@@ -23,6 +25,10 @@ type Request = {
   body: EntryType;
   params: { entryId: string };
 };
+
+export const drawCodecErrors = (e: DecodeError) => new Error(D.draw(e));
+
+const db = admin.firestore();
 
 export const optionFromNullable = <A, O>(
   c: C.Codec<unknown, O, A>
@@ -53,6 +59,15 @@ export const ParkingSessionModel = C.struct({
   model: optionFromNullable(C.string),
 });
 
+export const FilterModel = pipe(
+  C.struct({
+    pageSize: optionFromNullable(C.number),
+    start: optionFromNullable(C.number),
+  })
+);
+
+export type Filter = C.TypeOf<typeof FilterModel>;
+
 export type ParkingSession = C.TypeOf<typeof ParkingSessionModel>;
 
 export const completeSession = (now: Date) => (session: ParkingSession) => ({
@@ -73,7 +88,9 @@ export type FirestoreContext = {
 
 export const PARKING_SESSIONS_COLLECTION = "parking-sessions";
 
-export const createSessionRTE = (parkingSession: ParkingSession) =>
+export const createParkingSessionInFireStoreRTE = (
+  parkingSession: ParkingSession
+) =>
   pipe(
     RTE.ask<FirestoreContext>(),
     RTE.chainTaskEitherK(({ firestore }) =>
@@ -90,15 +107,32 @@ export const createSessionRTE = (parkingSession: ParkingSession) =>
     )
   );
 
-export const listSessionsRTE = pipe(
-  RTE.ask<FirestoreContext>(),
-  RTE.chainTaskEitherK(({ firestore }) =>
-    TE.tryCatch(() => {
-      return firestore.collection(PARKING_SESSIONS_COLLECTION).get();
-    }, E.toError)
-  ),
-  RTE.map((_) => _.docs)
-);
+export const listSessionsRTE = (filter: Filter) =>
+  pipe(
+    RTE.ask<FirestoreContext>(),
+    RTE.chainTaskEitherK(({ firestore }) =>
+      TE.tryCatch(() => {
+        const collectionRef = firestore.collection(PARKING_SESSIONS_COLLECTION);
+        pipe(
+          filter.pageSize,
+          O.fold(
+            () => {},
+            (pageSize) => collectionRef.limit(pageSize)
+          )
+        );
+        pipe(
+          filter.start,
+          O.fold(
+            () => {},
+            (start) => collectionRef.startAt(start)
+          )
+        );
+
+        return collectionRef.get();
+      }, E.toError)
+    ),
+    RTE.map((_) => _.docs)
+  );
 export const updateSessionRTE = (session: ParkingSession) => (id: string) =>
   pipe(
     RTE.ask<FirestoreContext>(),
@@ -139,8 +173,42 @@ const addEntry = async (req: Request, res: Response) => {
 const server = express();
 server.use(cors({ origin: true }));
 
+export type FunctionContext = {
+  req: Request;
+  res: Response;
+};
+
+export const handleCloudFunctionError = (e: Error) =>
+  pipe(
+    RT.ask<FunctionContext>(),
+    RT.chainIOK(({ res }) => () => {
+      res.status(500).send({ error: e.message });
+    })
+  );
+
+export const handleCloudFunctionSuccess = (data: unknown) =>
+  pipe(
+    RT.ask<FunctionContext>(),
+    RT.chainIOK(({ res }) => () => {
+      res.status(200).send({ status: "success", data });
+    })
+  );
+
+export const getParkingSessionFromRequest = pipe(
+  RTE.ask<FunctionContext>(),
+  RTE.chainEitherK(ParkingSessionModel.decode),
+  RTE.mapLeft(drawCodecErrors)
+);
+
+export const createSession = async (req: Request, res: Response) =>
+  pipe(
+    getParkingSessionFromRequest,
+    RTE.chainW(createParkingSessionInFireStoreRTE),
+    RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)
+  )({ req, res, firestore: db })();
+
 server.post("/listSessions", (req, res) => res.status(200).send("Hey there!"));
-server.post("/createSession", addEntry);
+server.post("/createSession", createSession);
 server.post("/completeSession", addEntry);
 
 export const api = onRequest(server);
