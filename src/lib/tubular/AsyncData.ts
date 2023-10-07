@@ -67,6 +67,7 @@ export const done = <T>(data: T): AsyncData<T> => ({
 export const of: <A>(a: A) => AsyncData<A> = done;
 export const URI = "AsyncData";
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type URI = typeof URI;
 
 declare module "fp-ts/HKT" {

@@ -13,7 +13,6 @@ import {
   User,
   signOut,
 } from "firebase/auth";
-import { useStableO } from "fp-ts-react-stable-hooks";
 import { log } from "fp-ts/Console";
 import * as E from "fp-ts/Either";
 import { flow, pipe } from "fp-ts/function";
@@ -55,37 +54,37 @@ export const SignOutTE = (auth: Auth) =>
   TE.tryCatch(() => signOut(auth), E.toError);
 
 function App() {
-  const [userO, setUserO] = useStableO<User>(O.none);
+  const [userO, setUserO] = useState<O.Option<User>>(O.none);
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => pipe(user, O.fromNullable, setUserO));
   }, []);
 
   const handleSignIn = React.useCallback(
-    pipe(
-      SignInWithPopupTE(auth, provider),
-      TE.chainFirstIOK(log),
-      TE.chainIOK(
-        flow(
-          O.some,
-          O.map((_) => _.user),
-          setUserO,
-          IO.of
+    () =>
+      pipe(
+        SignInWithPopupTE(auth, provider),
+        TE.chainFirstIOK(log),
+        TE.chainIOK(
+          flow(
+            O.some,
+            O.map((_) => _.user),
+            setUserO,
+            IO.of
+          )
         )
-      )
-    ),
+      )(),
     []
   );
-  const handleSignOut = React.useCallback(
+  const handleSignOut = React.useCallback(() =>
     pipe(
       SignOutTE(auth),
       TE.chainIOK(() => () => {
         setUserO(O.none);
       })
-    ),
+    )(),
     []
   );
-
 
   return (
     <div className="App">
