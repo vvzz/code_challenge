@@ -6,6 +6,7 @@ module.exports = {
   },
   extends: [
     "eslint:recommended",
+    "plugin:prettier/recommended",
     "plugin:import/errors",
     "plugin:import/warnings",
     "plugin:import/typescript",
@@ -19,12 +20,16 @@ module.exports = {
   },
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
+    "!src/", // Include src folder.
   ],
-  plugins: ["@typescript-eslint", "import"],
+  plugins: ["@typescript-eslint", "import", "prettier"],
   rules: {
     quotes: ["error", "double"],
     "import/no-unresolved": 0,
     indent: ["error", 2],
     "object-curly-spacing": 0,
+    "@typescript-eslint/no-empty-function": 0,
+    "prettier/prettier": "error",
+    indent: "off",
   },
 };
