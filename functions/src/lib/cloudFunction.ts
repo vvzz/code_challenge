@@ -1,4 +1,4 @@
-import { Response, Request } from "express";
+import { Request, Response } from "express";
 import { pipe } from "fp-ts/function";
 import * as RT from "fp-ts/ReaderTask";
 
@@ -20,3 +20,4 @@ export const handleCloudFunctionSuccess = (data: unknown) =>
       res.status(200).send({ status: "success", data });
     })
   );
+

@@ -5,23 +5,14 @@ import * as O from "fp-ts/Option";
 import * as RTE from "fp-ts/ReaderTaskEither";
 import * as TE from "fp-ts/TaskEither";
 import * as C from "io-ts/Codec";
-import { optionFromNullable } from "lib/models/optionFromNullable";
-import {
-  ParkingSession,
-  ParkingSessionModel,
-} from "lib/models/ParkingMetaData";
+import { Filter } from "./models/Filter";
+import { ParkingSession, ParkingSessionModel } from "./models/ParkingMetaData";
 
-export const FilterModel = pipe(
-  C.struct({
-    pageSize: optionFromNullable(C.number),
-    start: optionFromNullable(C.number),
-  })
-);
-export type Filter = C.TypeOf<typeof FilterModel>;
 export type FirestoreContext = {
   firestore: Firestore;
 };
 export const PARKING_SESSIONS_COLLECTION = "parking-sessions";
+
 export const createParkingSessionInFireStoreRTE = (
   parkingSession: ParkingSession
 ) =>
@@ -70,7 +61,7 @@ export const listSessionsFromFirestoreRTE = (filter: Filter) =>
       return documents;
     })
   );
-export const updateSessionRTE =
+export const updateSessionInFirestoreRTE =
   (id: string) => (session: Partial<C.OutputOf<typeof ParkingSessionModel>>) =>
     pipe(
       RTE.ask<FirestoreContext>(),
