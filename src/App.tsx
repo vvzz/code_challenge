@@ -1,15 +1,24 @@
 import { AuthProvider } from "@firebase/auth";
 import { initializeApp } from "firebase/app";
+import {
+  Auth,
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  UserCredential,
+} from "firebase/auth";
 import { log } from "fp-ts/Console";
-import { pipe } from "fp-ts/function";
-import React from "react";
-import "./App.css";
-import { Auth, getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import * as TE from "fp-ts/TaskEither";
 import * as E from "fp-ts/Either";
+import { flow, pipe } from "fp-ts/function";
+import * as IO from "fp-ts/IO";
+import * as O from "fp-ts/Option";
+import * as TE from "fp-ts/TaskEither";
+import React, { useState } from "react";
 import { Container, Nav, Navbar } from "react-bootstrap";
+import { LoginPage } from "./pages/LoginPage";
+import { SessionsPage } from "./pages/SessionsPage";
+import "./App.css";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDctVDiDJy7_zdj5D03q_ZHMAjkQ1NXm88",
   authDomain: "vend-park-challenge.firebaseapp.com",
@@ -25,17 +34,58 @@ const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
 
-export const SignInWithPopupTE = (auth: Auth, provider: AuthProvider) => TE.tryCatch(() => signInWithPopup(auth, provider), E.toError);
+export const SignInWithPopupTE = (auth: Auth, provider: AuthProvider) =>
+  TE.tryCatch(() => signInWithPopup(auth, provider), E.toError);
 
 function App() {
-  const handleSignIn =
-    pipe(SignInWithPopupTE(auth, provider), TE.chainIOK(log));
+  const [userO, setUserO] = useState<O.Option<UserCredential>>(O.none);
+
+  const handleSignIn = React.useCallback(
+    pipe(
+      SignInWithPopupTE(auth, provider),
+      TE.chainFirstIOK(log),
+      TE.chainIOK(flow(O.some, setUserO, IO.of))
+    ),
+    []
+  );
 
   return (
     <div className="App">
+      {pipe(
+        userO,
+        O.fold(
+          () => <LoginPage onLogin={handleSignIn} />,
+          (user) => <AuthenticatedApplication user={user} />
+        )
+      )}
+    </div>
+  );
+}
+
+export type AuthContext = {
+  user: UserCredential;
+};
+
+export const ApplicationContext = React.createContext<O.Option<AuthContext>>(
+  O.none
+);
+
+export const AuthenticatedApplication: React.FC<{ user: UserCredential }> = ({
+  user,
+}) => (
+  <ApplicationContext.Provider value={O.some({ user })}>
+    <div>
       <Navbar expand="lg" className="bg-body-tertiary">
         <Container>
-          <Navbar.Brand href="#home">Park!</Navbar.Brand>
+          <Navbar.Brand href="#home">
+            <img
+              src="/parking.svg" // Replace with the path to your SVG logo
+              width="40"
+              height="40"
+              className="d-inline-block align-top"
+              alt="Logo"
+            />
+          </Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto">
@@ -44,17 +94,14 @@ function App() {
           </Navbar.Collapse>
           <Navbar.Collapse className="justify-content-end">
             <Navbar.Text>
-              Signed in as: <a href="#login">Mark Otto</a>
+              Signed in as: <a href="#login">{user.user.displayName}</a>
             </Navbar.Text>
           </Navbar.Collapse>
         </Container>
       </Navbar>
-      <button onClick={handleSignIn}>Sing In With Google</button>
+      <SessionsPage />
     </div>
-  );
-}
+  </ApplicationContext.Provider>
+);
 
 export default App;
-
-
-
