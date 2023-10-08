@@ -6,7 +6,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { isToday } from "date-fns";
 import { formatDistance, format } from "date-fns/fp";
-import { error, warn } from "fp-ts/Console";
+import { error } from "fp-ts/Console";
 import { flow, pipe } from "fp-ts/function";
 import * as O from "fp-ts/Option";
 import React, { useState } from "react";
@@ -74,7 +74,7 @@ export const FinalizeSession: React.FC<{ session: ParkingSessionWithId }> = (
       ),
       RT.chainIOK(() => IO.of(setIsLoading(false)))
     )({ apiURL })();
-  }, [apiURL, props.session]);
+  }, [apiURL, props.session, dispatch]);
 
   return isActive(props.session) ? (
     <div>
@@ -372,7 +372,21 @@ export const SessionsPage: React.FC<{}> = (props) => {
   return (
     <Container className="mt-5">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2 className="mb-0">Sessions </h2>
+        <div className="d-flex align-items-center">
+          <h2 className="mb-0">Sessions</h2>
+          <div className="form-check form-switch ms-3">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="activeOnlyCheckbox"
+              checked={false}
+              onChange={() => {}}
+            />
+            <label className="form-check-label" htmlFor="activeOnlyCheckbox">
+              Active Only
+            </label>
+          </div>
+        </div>
         <span className="badge bg-primary ">
           Last Updated:{" "}
           {pipe(
