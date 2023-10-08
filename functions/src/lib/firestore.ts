@@ -13,7 +13,7 @@ export type FirestoreContext = {
 };
 export const PARKING_SESSIONS_COLLECTION = "parking-sessions";
 
-export const createParkingSessionInFireStoreRTE = (
+export const createParkingSessionInFireStore = (
   parkingSession: ParkingSession
 ) =>
   pipe(
@@ -27,16 +27,27 @@ export const createParkingSessionInFireStoreRTE = (
           id: parkingSessionDocument.id,
           ...ParkingSessionModel.encode(parkingSession),
         };
-        return parkingSessionDocument.set(parkingSessionObject);
+        return parkingSessionDocument
+          .set(parkingSessionObject)
+          .then(() => parkingSessionDocument.id);
       }, E.toError)
     )
   );
-export const listSessionsFromFirestoreRTE = (filter: Filter) =>
+
+export const readSnapshotDocument = (data: DocumentData) => {
+  const timeIn = data.timeIn && data.timeIn.toDate().toISOString();
+  const timeOut = data.timeOut && data.timeOut.toDate().toISOString();
+  return { ...data, timeIn, timeOut };
+};
+
+export const listSessionsFromFirestore = (filter: Filter) =>
   pipe(
     RTE.ask<FirestoreContext>(),
     RTE.chainTaskEitherK(({ firestore }) =>
       TE.tryCatch(() => {
-        const collectionRef = firestore.collection(PARKING_SESSIONS_COLLECTION);
+        const collectionRef = firestore
+          .collection(PARKING_SESSIONS_COLLECTION)
+          .orderBy("timeIn", "desc");
         pipe(
           filter.pageSize,
           O.fold(
@@ -52,16 +63,35 @@ export const listSessionsFromFirestoreRTE = (filter: Filter) =>
           )
         );
 
-        return collectionRef.get();
+        return collectionRef.get().then((qs) => {
+          const documents: Array<DocumentData> = [];
+          qs.forEach((doc) => documents.push(readSnapshotDocument(doc.data())));
+          return documents;
+        });
       }, E.toError)
-    ),
-    RTE.map((_) => {
-      const documents: Array<DocumentData> = [];
-      _.forEach((_) => documents.push(_.data()));
-      return documents;
-    })
+    )
   );
-export const updateSessionInFirestoreRTE =
+
+export const getSessionFromFirestore = (id: string) =>
+  pipe(
+    RTE.ask<FirestoreContext>(),
+    RTE.chainTaskEitherK(({ firestore }) =>
+      TE.tryCatch(
+        () =>
+          firestore
+            .collection(PARKING_SESSIONS_COLLECTION)
+            .doc(id)
+            .get()
+            .then((ds) => {
+              const data = ds.data();
+              return data ? readSnapshotDocument(data) : {};
+            }),
+        E.toError
+      )
+    )
+  );
+
+export const updateSessionInFirestore =
   (id: string) => (session: Partial<C.OutputOf<typeof ParkingSessionModel>>) =>
     pipe(
       RTE.ask<FirestoreContext>(),

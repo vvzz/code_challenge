@@ -26,10 +26,10 @@ module.exports = {
   rules: {
     quotes: ["error", "double"],
     "import/no-unresolved": 0,
-    indent: ["error", 2],
     "object-curly-spacing": 0,
     "@typescript-eslint/no-empty-function": 0,
     "prettier/prettier": "error",
-    indent: "off",
+    indent: 0,
+    "operator-linebreak": 0,
   },
 };

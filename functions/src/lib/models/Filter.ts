@@ -6,6 +6,6 @@ export const FilterModel = pipe(
   C.struct({
     pageSize: optionFromNullable(C.number),
     start: optionFromNullable(C.number),
-  }),
+  })
 );
 export type Filter = C.TypeOf<typeof FilterModel>;

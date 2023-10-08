@@ -5,22 +5,23 @@ import {
   FunctionContext,
   handleCloudFunctionError,
   handleCloudFunctionSuccess,
-} from "lib/cloudFunction";
+} from "./lib/cloudFunction";
 import {
-  createParkingSessionInFireStoreRTE,
-  listSessionsFromFirestoreRTE,
-  updateSessionInFirestoreRTE,
-} from "lib/firestore";
-import { DocumentId } from "lib/models/DocumentId";
-import { FilterModel } from "lib/models/Filter";
+  createParkingSessionInFireStore,
+  getSessionFromFirestore,
+  listSessionsFromFirestore,
+  updateSessionInFirestore,
+} from "./lib/firestore";
+import { DocumentId } from "./lib/models/DocumentId";
+import { FilterModel } from "./lib/models/Filter";
 import {
   endSession,
   ParkingMetaDataModel,
   setMetadata,
   startSession,
   TimeoutModel,
-} from "lib/models/ParkingMetaData";
-import { drawCodecErrors } from "lib/util";
+} from "./lib/models/ParkingMetaData";
+import { drawCodecErrors } from "./lib/util";
 
 export const getParkingSessionMetadataFromRequest = pipe(
   RTE.ask<FunctionContext>(),
@@ -47,20 +48,27 @@ export const getIdFromRequest = pipe(
 export const createSession = pipe(
   sequenceT(RTE.ApplyPar)(getParkingSessionMetadataFromRequest, getCurrentTime),
   RTE.map(([metadata, now]) => pipe(startSession(now), setMetadata(metadata))),
-  RTE.chainW(createParkingSessionInFireStoreRTE),
+  RTE.chainW(createParkingSessionInFireStore),
+  RTE.chainW(getSessionFromFirestore),
   RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)
 );
 
 export const completeSession = pipe(
   sequenceT(RTE.ApplyPar)(getIdFromRequest, getCurrentTime),
   RTE.chainW(([{ id }, now]) =>
-    pipe(now, endSession, TimeoutModel.encode, updateSessionInFirestoreRTE(id))
+    pipe(
+      now,
+      endSession,
+      TimeoutModel.encode,
+      updateSessionInFirestore(id),
+      RTE.chainW(() => getSessionFromFirestore(id))
+    )
   ),
   RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)
 );
 
 export const listSessions = pipe(
   getListFilterFromRequest,
-  RTE.chainW(listSessionsFromFirestoreRTE),
+  RTE.chainW(listSessionsFromFirestore),
   RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)
 );

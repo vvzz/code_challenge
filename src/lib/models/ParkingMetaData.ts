@@ -1,6 +1,7 @@
 import { pipe } from "fp-ts/function";
 import * as O from "fp-ts/Option";
 import * as C from "io-ts/Codec";
+import { dateFromISOString } from "./dateFromISOString";
 import { optionFromNullable } from "./optionFromNullable";
 
 export const ParkingMetaDataModel = C.struct({
@@ -15,11 +16,11 @@ export const ParkingMetaDataModel = C.struct({
 export type ParkingMetadata = C.TypeOf<typeof ParkingMetaDataModel>;
 
 export const TimeoutModel = C.struct({
-  timeOut: optionFromNullable(C.string),
+  timeOut: optionFromNullable(C.fromDecoder(dateFromISOString)),
 });
 export const ParkingSessionModel = pipe(
   C.struct({
-    timeIn: C.string,
+    timeIn: C.fromDecoder(dateFromISOString),
     metadata: optionFromNullable(ParkingMetaDataModel),
   }),
   C.intersect(TimeoutModel)
@@ -27,11 +28,11 @@ export const ParkingSessionModel = pipe(
 
 export type ParkingSession = C.TypeOf<typeof ParkingSessionModel>;
 export const endSession = (now: Date) => ({
-  timeOut: pipe(now.toISOString(), O.some),
+  timeOut: pipe(now, O.some),
 });
 
 export const startSession = (now: Date): ParkingSession => ({
-  timeIn: now.toISOString(),
+  timeIn: now,
   timeOut: O.none,
   metadata: O.none,
 });

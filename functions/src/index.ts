@@ -1,23 +1,23 @@
-import { completeSession, createSession, listSessions } from "actions";
+import { completeSession, createSession, listSessions } from "./actions";
 import * as cors from "cors";
 import * as express from "express";
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 
-admin.initializeApp();
-const db = admin.firestore();
+const app = admin.initializeApp();
+const firestore = app.firestore();
 
 const server = express();
 server.use(cors({ origin: true }));
 
 server.post("/listSessions", (req, res) =>
-  listSessions({ req, res, firestore: db })()
+  listSessions({ req, res, firestore })()
 );
 server.post("/createSession", (req, res) =>
-  createSession({ req, res, firestore: db })()
+  createSession({ req, res, firestore })()
 );
 server.post("/completeSession", (req, res) =>
-  completeSession({ req, res, firestore: db })()
+  completeSession({ req, res, firestore })()
 );
 
 export const api = onRequest(server);
