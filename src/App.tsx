@@ -21,7 +21,10 @@ import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
 import React, { useEffect, useState } from "react";
 import { Button, Container, Navbar } from "react-bootstrap";
-import { SessionsController } from "./controllers/SessionsController";
+import {
+  EagerUpdatesController,
+  SessionsController,
+} from "./controllers/SessionsController";
 import { ApiContext } from "./contexts/ApiContext";
 import { LoginPage } from "./pages/LoginPage";
 import { SessionsPage } from "./pages/SessionsPage";
@@ -159,7 +162,9 @@ export const AuthenticatedApplication: React.FC<{
       <div>
         <ApplicationNavBar onSignOut={onSignout} />
         <SessionsController>
-          <SessionsPage />
+          <EagerUpdatesController>
+            <SessionsPage />
+          </EagerUpdatesController>
         </SessionsController>
       </div>
     </ApplicationContext.Provider>

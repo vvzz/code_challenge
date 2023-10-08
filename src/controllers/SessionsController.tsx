@@ -8,19 +8,17 @@ import * as IO from "fp-ts/IO";
 import { DocumentId } from "../lib/models/DocumentId";
 import { APISuccessModel, getData } from "../lib/models/APISuccess";
 import { drawCodecErrors } from "../lib/util";
-import {
-  ParkingSessionModel,
-} from "../lib/models/ParkingMetaData";
+import { ParkingSessionModel } from "../lib/models/ParkingMetaData";
 import React, { useEffect, useState } from "react";
 import { ApplicationContext } from "../App";
 import { ApiContext } from "../contexts/ApiContext";
 import * as AD from "../lib/tubular/AsyncData";
 import * as C from "io-ts/Codec";
 
+export const ParkingSessionDocumentModel =
+  C.intersect(ParkingSessionModel)(DocumentId);
 
-export const ParkingSessionDocumentModel = C.intersect(ParkingSessionModel)(DocumentId)
-
-export type ParkingSession = C.TypeOf<typeof ParkingSessionDocumentModel>
+export type ParkingSession = C.TypeOf<typeof ParkingSessionDocumentModel>;
 
 export const fetchParkingSessionsRTE = pipe(
   RTE.ask<ApiContext>(),
@@ -56,6 +54,13 @@ export const completeParkingSessionRTE = (id: string) =>
         E.toError
       )
     ),
+    RTE.chainEitherKW(
+      flow(
+        APISuccessModel(ParkingSessionDocumentModel).decode,
+        E.mapLeft(drawCodecErrors),
+        E.map(getData)
+      )
+    )
   );
 
 export type SessionsControllerState = {
@@ -64,6 +69,29 @@ export type SessionsControllerState = {
 
 export const SessionsControllerContext =
   React.createContext<SessionsControllerState>(null as never);
+
+export type EagerUpdatesControllerState = Map<string, ParkingSession>;
+export const EagerUpdatesControllerContext = React.createContext<
+  [
+    EagerUpdatesControllerState,
+    React.Dispatch<React.SetStateAction<EagerUpdatesControllerState>>,
+  ]
+>(null as never);
+export const EagerUpdatesController: React.FC<{
+  children?: React.ReactNode;
+}> = (props) => {
+  const localState = React.useState<EagerUpdatesControllerState>(new Map());
+  const { sessions } = React.useContext(SessionsControllerContext);
+  useEffect(() => {
+    localState[1](new Map());
+  }, [sessions]);
+
+  return (
+    <EagerUpdatesControllerContext.Provider value={localState}>
+      {props.children}
+    </EagerUpdatesControllerContext.Provider>
+  );
+};
 
 export const SessionsController: React.FC<{ children?: React.ReactNode }> = (
   props
@@ -82,7 +110,6 @@ export const SessionsController: React.FC<{ children?: React.ReactNode }> = (
     )({ apiURL })();
   }, [apiURL]);
 
-  console.log("Sess", sessions);
   return (
     <SessionsControllerContext.Provider value={{ sessions }}>
       {props.children}

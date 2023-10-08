@@ -1,10 +1,7 @@
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { isToday } from "date-fns";
-import {
-  formatDistance,
-  format,
-} from "date-fns/fp";
+import { formatDistance, format } from "date-fns/fp";
 import { error } from "fp-ts/Console";
 import { flow, pipe } from "fp-ts/function";
 import * as O from "fp-ts/Option";
@@ -23,6 +20,7 @@ import { ApplicationContext } from "../App";
 import { isActive } from "../lib/models/ParkingMetaData";
 import {
   completeParkingSessionRTE,
+  EagerUpdatesControllerContext,
   ParkingSession,
   SessionsControllerContext,
 } from "../controllers/SessionsController";
@@ -30,11 +28,16 @@ import * as AD from "../lib/tubular/AsyncData";
 import * as RTE from "fp-ts/ReaderTaskEither";
 import * as RT from "fp-ts/ReaderTaskEither";
 import * as IO from "fp-ts/IO";
+import * as A from "fp-ts/Array";
 
 export const FinalizeSession: React.FC<{ session: ParkingSession }> = (
   props
 ) => {
   const { apiURL } = React.useContext(ApplicationContext);
+  const [eagerUpdates, dispatch] = React.useContext(
+    EagerUpdatesControllerContext
+  );
+
   const [showToast, setShowToast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,8 +45,17 @@ export const FinalizeSession: React.FC<{ session: ParkingSession }> = (
     pipe(
       completeParkingSessionRTE(props.session.id),
       RTE.apFirst(RTE.fromIO(IO.of(setIsLoading(true)))),
-      RTE.foldW(flow(error, RT.fromIO), () =>
-        RTE.fromIO(IO.of(setShowToast(true)))
+      RTE.foldW(flow(error, RT.fromIO), (updatedSession) =>
+        pipe(
+          IO.of(
+            dispatch(
+              (eagerMap) =>
+                new Map(eagerMap.set(updatedSession.id, updatedSession))
+            )
+          ),
+          RTE.fromIO,
+          RTE.chainIOK(() => IO.of(setShowToast(true)))
+        )
       ),
       RT.chainIOK(() => IO.of(setIsLoading(false)))
     )({ apiURL })();
@@ -66,11 +78,9 @@ export const FinalizeSession: React.FC<{ session: ParkingSession }> = (
             aria-hidden="true"
           />
         ) : (
-          <>
-            <FontAwesomeIcon icon={faCheckCircle} />
-            &nbsp; Finalize
-          </>
+          <FontAwesomeIcon icon={faCheckCircle} />
         )}
+        &nbsp;Finalize
       </Button>
       <Toast
         show={showToast}
@@ -101,10 +111,18 @@ export const FinalizeSession: React.FC<{ session: ParkingSession }> = (
   ) : null;
 };
 
-export const formatTime = (time: Date) => isToday(time) ? pipe(time,format("hh:mma")) :pipe(time,format("hh:mma MMM do"))
+export const formatTime = (time: Date) =>
+  isToday(time)
+    ? pipe(time, format("hh:mma"))
+    : pipe(time, format("hh:mma MMM do"));
 
 export const SessionsTable: React.FC<{}> = (props) => {
   const { sessions } = React.useContext(SessionsControllerContext);
+  const [sessionUpdates] = React.useContext(EagerUpdatesControllerContext);
+  const updatedSessions = pipe(
+    sessions,
+    AD.map(A.map((session) => sessionUpdates.get(session.id) || session))
+  );
 
   return (
     <Table responsive>
@@ -120,7 +138,7 @@ export const SessionsTable: React.FC<{}> = (props) => {
         </tr>
       </thead>
       {pipe(
-        sessions,
+        updatedSessions,
         AD.fold(
           () => null,
           () => <div>Loading</div>,
@@ -166,9 +184,17 @@ export const SessionsTable: React.FC<{}> = (props) => {
                   >
                     {pipe(session.timeIn, formatTime)}
                   </td>
-                  <td className={
-                    isActive(session) ? "bg-success-subtle bg-opacity-75" : ""
-                  }>{pipe(session.timeOut, O.map(formatTime), O.getOrElseW(() => <span>Active</span>))}</td>
+                  <td
+                    className={
+                      isActive(session) ? "bg-success-subtle bg-opacity-75" : ""
+                    }
+                  >
+                    {pipe(
+                      session.timeOut,
+                      O.map(formatTime),
+                      O.getOrElseW(() => <span>Active</span>)
+                    )}
+                  </td>
                   <td>
                     {pipe(
                       session.timeIn,
