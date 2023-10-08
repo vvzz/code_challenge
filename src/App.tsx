@@ -119,7 +119,7 @@ export const ApplicationNavBar: React.FC<{ onSignOut: () => void }> = (
   const appContext = React.useContext(ApplicationContext);
 
   return (
-    <Navbar expand="lg" className="bg-body-tertiary">
+    <Navbar expand="lg" className="bg-body-tertiary shadow-bottom">
       <Container>
         <Navbar.Brand href="#home">
           <img

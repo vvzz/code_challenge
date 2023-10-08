@@ -45,9 +45,8 @@ export const listSessionsFromFirestore = (filter: Filter) =>
     RTE.ask<FirestoreContext>(),
     RTE.chainTaskEitherK(({ firestore }) =>
       TE.tryCatch(() => {
-        const collectionRef = firestore
-          .collection(PARKING_SESSIONS_COLLECTION)
-          .orderBy("timeIn", "desc");
+        const collectionRef = firestore.collection(PARKING_SESSIONS_COLLECTION);
+
         pipe(
           filter.pageSize,
           O.fold(
@@ -63,11 +62,25 @@ export const listSessionsFromFirestore = (filter: Filter) =>
           )
         );
 
-        return collectionRef.get().then((qs) => {
-          const documents: Array<DocumentData> = [];
-          qs.forEach((doc) => documents.push(readSnapshotDocument(doc.data())));
-          return documents;
-        });
+        pipe(
+          filter.active,
+          O.filter((active) => active === true),
+          O.fold(
+            () => {},
+            () => collectionRef.where("timeOut", "==", null)
+          )
+        );
+
+        return collectionRef
+          .orderBy("timeIn", "desc")
+          .get()
+          .then((qs) => {
+            const documents: Array<DocumentData> = [];
+            qs.forEach((doc) =>
+              documents.push(readSnapshotDocument(doc.data()))
+            );
+            return documents;
+          });
       }, E.toError)
     )
   );
