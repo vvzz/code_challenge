@@ -1,4 +1,8 @@
-import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCheckCircle,
+  faChevronUp,
+  faPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { isToday } from "date-fns";
 import { formatDistance, format } from "date-fns/fp";
@@ -378,7 +382,11 @@ export const SessionsPage: React.FC<{}> = (props) => {
           )}
         </span>
         <Button variant="secondary" onClick={() => setAddMode(!addMode)}>
-          Add New Session
+          {addMode ? (
+            <FontAwesomeIcon icon={faChevronUp} />
+          ) : (
+            <FontAwesomeIcon icon={faPlus} />
+          )}
         </Button>
       </div>
       <Container>
