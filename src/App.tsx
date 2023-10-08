@@ -20,7 +20,7 @@ import * as IO from "fp-ts/IO";
 import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
 import React, { useEffect, useState } from "react";
-import { Button, Container, Nav, Navbar } from "react-bootstrap";
+import { Button, Container, Navbar } from "react-bootstrap";
 import { SessionsController } from "./controllers/SessionsController";
 import { ApiContext } from "./contexts/ApiContext";
 import { LoginPage } from "./pages/LoginPage";
@@ -76,13 +76,14 @@ function App() {
       )(),
     []
   );
-  const handleSignOut = React.useCallback(() =>
-    pipe(
-      SignOutTE(auth),
-      TE.chainIOK(() => () => {
-        setUserO(O.none);
-      })
-    )(),
+  const handleSignOut = React.useCallback(
+    () =>
+      pipe(
+        SignOutTE(auth),
+        TE.chainIOK(() => () => {
+          setUserO(O.none);
+        })
+      )(),
     []
   );
 

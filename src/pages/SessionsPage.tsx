@@ -2,10 +2,7 @@ import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { isToday } from "date-fns";
 import {
-  differenceInSeconds,
   formatDistance,
-  formatDuration,
-  parseISO,
   format,
 } from "date-fns/fp";
 import { error } from "fp-ts/Console";
