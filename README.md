@@ -1,46 +1,55 @@
-# Getting Started with Create React App
+# Vend Park Code Challenge
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+This project demonstrates my take on setting up and designing a continuously evolving application with a
+focus on long term maintainability.
 
-In the project directory, you can run:
+The application is deployed at https://vend-park-challenge.web.app/ and should be accessible to any user with a Google
+account.
 
-### `npm start`
+## Technical overview
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+The solution is implemented in typescript using Google's Firebase platform. I considered few different approaches and
+cloud based offerings and Firebase provides a good balance between functionality and complexity.
+The front end is implemented as a single page React web application and backend is an HTTP api cloud function using
+Express. If there wasn't a specific requirement to provide an API, I would probably leverage Firebase's ability to use
+serverless functions directly from client application as that would simplify some of the interactions.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## UX Design
 
-### `npm test`
+I provided a basic UI based on bootstrap to demonstrate the interface design patterns that are appropriate in this
+solution. Since this application is likely to be used by untrained users(e.g. parking lot attendants) it is designed to
+be simple and inviting to use. The UI allows user to filter parking sessions based on their status and also gives
+ability to create new session and finalize existing ones. The session view is refreshed every 10 seconds.
+The new sessions creation flow is hidden by default as to no overwhelm the UI as I
+believe this functionality would be generally done automatically and not require manual intervention regularly. The UI
+interactions provide gentle cues such as loading indicators about the state of asynchronous actions. I'm not a graphic
+designer, but care has been taken to provide good visual rhythm and color combinations.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Testing and QA
 
-### `npm run build`
+I believe this application would be served by an end-to-end/smoke test level testing to exercise all the services in
+unison. More targeted unit testing could be appropriate for future functionality such as billing and parking rates, but
+I would not recommend unit testing for the majority of the codebase as strong typing generally accomplishes many of the
+same goals without extra maintenance overhead
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Out of Scope
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+* ### Authorization
+  The application implements basic authentication and JWT verification but does not implement any RBAC or any other
+  authorization mechanisms
+* ### Monorepo configuration
+  I believe that it's imperative to give developers ability to easily restructure and decompose code across the whole
+  codebase. The *lib* folder is designed to demonstrate a potential shareable codebase that could be exposed one of the
+  shared modules.
+* ### Devops and immutable infrastructure
+  Firebase provides some built in tools for quickly creating and deploying infrastucture which is sufficient for this
+  project, but in a production environment I would like to see the infrastructure fully defined in code.
+* ### Logging and instrumentation
+  The code leaves provisions for easily adding centralized logging/tracing, but it is not implemented in the scope of
+  this work
+* ### Pagination
+  Given a potentially large amount of sessions accumulating over time for a given parking facility, I would recommend
+  an approach combining easy filtering by important session parameters(e.g. plate, car make, color, session duration,
+  date) and pagination logic. Just pagination alone would not lead to good UX
