@@ -29,6 +29,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { SessionsPage } from "./pages/SessionsPage";
 import "./App.css";
 
+
+// TODO: this should be configured during the build stage
 const firebaseConfig = {
   apiKey: "AIzaSyDctVDiDJy7_zdj5D03q_ZHMAjkQ1NXm88",
   authDomain: "vend-park-challenge.firebaseapp.com",
