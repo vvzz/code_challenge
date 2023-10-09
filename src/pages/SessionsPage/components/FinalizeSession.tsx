@@ -20,14 +20,14 @@ import {
 import { isActive } from "../../../lib/models/ParkingMetaData";
 
 export const FinalizeSession: React.FC<{ session: ParkingSessionWithId }> = (
-  props,
+  props
 ) => {
-  const { apiURL } = React.useContext(ApplicationContext);
-  const [ eagerUpdates, dispatch ] = React.useContext(
-    EagerUpdatesControllerContext,
+  const { apiURL, user } = React.useContext(ApplicationContext);
+  const [eagerUpdates, dispatch] = React.useContext(
+    EagerUpdatesControllerContext
   );
 
-  const [ isLoading, setIsLoading ] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFinalizeSession = React.useCallback(() => {
     pipe(
@@ -41,17 +41,17 @@ export const FinalizeSession: React.FC<{ session: ParkingSessionWithId }> = (
                 UpdatesSessionsL,
                 L.modify(
                   (eagerMap) =>
-                    new Map(eagerMap.set(updatedSession.id, updatedSession)),
-                ),
-              ),
-            ),
+                    new Map(eagerMap.set(updatedSession.id, updatedSession))
+                )
+              )
+            )
           ),
-          RTE.fromIO,
-        ),
+          RTE.fromIO
+        )
       ),
-      RT.chainIOK(() => IO.of(setIsLoading(false))),
-    )({ apiURL })();
-  }, [ apiURL, props.session, dispatch ]);
+      RT.chainIOK(() => IO.of(setIsLoading(false)))
+    )({ apiURL, user })();
+  }, [apiURL, props.session, dispatch,user]);
 
   return isActive(props.session) ? (
     <div>

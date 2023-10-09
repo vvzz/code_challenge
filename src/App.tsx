@@ -159,8 +159,7 @@ export const AuthenticatedApplication: React.FC<{
     <ApplicationContext.Provider
       value={{
         user,
-        // apiURL: "http://127.0.0.1:5001/vend-park-challenge/us-central1/api",
-        apiURL: "https://api-wca43cuuza-uc.a.run.app",
+        apiURL: "",
       }}
     >
       <UIStateController>

@@ -23,7 +23,7 @@ export const AddParkingSesionForm: React.FC<{}> = () => {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [color, setColor] = useState("");
-  const { apiURL } = React.useContext(ApplicationContext);
+  const { apiURL,user } = React.useContext(ApplicationContext);
   const [eagerUpdates, dispatch] = React.useContext(
     EagerUpdatesControllerContext
   );
@@ -58,7 +58,7 @@ export const AddParkingSesionForm: React.FC<{}> = () => {
         setModel("");
         setColor("");
       })
-    )({ apiURL })();
+    )({ apiURL,user })();
   };
 
   return (

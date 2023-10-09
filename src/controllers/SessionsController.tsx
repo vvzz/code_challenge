@@ -70,45 +70,61 @@ export const fetchParkingSessionsRTE = pipe(
 
 export const completeParkingSessionRTE = (id: string) =>
   pipe(
-    RTE.ask<ApiContext>(),
-    RTE.chainTaskEitherK(({ apiURL }) =>
-      TE.tryCatch(
-        () =>
-          fetch(`${apiURL}/completeSession`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id }),
-          }).then((res) => res.json()),
-        E.toError
-      )
-    ),
-    RTE.chainEitherKW(
-      flow(
-        APISuccessModel(ParkingSessionDocumentModel).decode,
-        E.mapLeft(drawCodecErrors),
-        E.map(getData)
+    getIdToken,
+    RTE.chainW((token) =>
+      pipe(
+        RTE.ask<ApiContext>(),
+        RTE.chainTaskEitherK(({ apiURL }) =>
+          TE.tryCatch(
+            () =>
+              fetch(`${apiURL}/completeSession`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ id }),
+              }).then((res) => res.json()),
+            E.toError
+          )
+        ),
+        RTE.chainEitherKW(
+          flow(
+            APISuccessModel(ParkingSessionDocumentModel).decode,
+            E.mapLeft(drawCodecErrors),
+            E.map(getData)
+          )
+        )
       )
     )
   );
 export const createParkingSessionRTE = (metadata: ParkingMetadata) =>
   pipe(
-    RTE.ask<ApiContext>(),
-    RTE.chainTaskEitherK(({ apiURL }) =>
-      TE.tryCatch(
-        () =>
-          fetch(`${apiURL}/createSession`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ParkingMetaDataModel.encode(metadata)),
-          }).then((res) => res.json()),
-        E.toError
-      )
-    ),
-    RTE.chainEitherKW(
-      flow(
-        APISuccessModel(ParkingSessionDocumentModel).decode,
-        E.mapLeft(drawCodecErrors),
-        E.map(getData)
+    getIdToken,
+    RTE.chainW((token) =>
+      pipe(
+        RTE.ask<ApiContext>(),
+        RTE.chainTaskEitherK(({ apiURL }) =>
+          TE.tryCatch(
+            () =>
+              fetch(`${apiURL}/createSession`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(ParkingMetaDataModel.encode(metadata)),
+              }).then((res) => res.json()),
+            E.toError
+          )
+        ),
+        RTE.chainEitherKW(
+          flow(
+            APISuccessModel(ParkingSessionDocumentModel).decode,
+            E.mapLeft(drawCodecErrors),
+            E.map(getData)
+          )
+        )
       )
     )
   );
