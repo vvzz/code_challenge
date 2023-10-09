@@ -1,39 +1,46 @@
 import { warn } from "fp-ts/Console";
 import * as E from "fp-ts/Either";
 import { flow, pipe } from "fp-ts/function";
-import * as RTE from "fp-ts/ReaderTaskEither";
-import * as RT from "fp-ts/ReaderTask";
-import * as TE from "fp-ts/TaskEither";
 import * as IO from "fp-ts/IO";
 import * as O from "fp-ts/Option";
-import { DocumentId } from "../lib/models/DocumentId";
+import * as RT from "fp-ts/ReaderTask";
+import * as RTE from "fp-ts/ReaderTaskEither";
+import * as TE from "fp-ts/TaskEither";
+import * as C from "io-ts/Codec";
+import * as L from "monocle-ts/Lens";
+import React, { useEffect, useState } from "react";
+import { UIStateControllerContext } from "../controllers/UIStateController";
+import { ApplicationContext } from "../App";
+import { ApiContext } from "../contexts/ApiContext";
 import { APISuccessModel, getData } from "../lib/models/APISuccess";
-import { drawCodecErrors } from "../lib/util";
+import { DocumentId } from "../lib/models/DocumentId";
 import {
   ParkingMetadata,
   ParkingMetaDataModel,
   ParkingSessionModel,
 } from "../lib/models/ParkingMetaData";
-import React, { useEffect, useState } from "react";
-import { ApplicationContext } from "../App";
-import { ApiContext } from "../contexts/ApiContext";
 import * as AD from "../lib/tubular/AsyncData";
-import * as C from "io-ts/Codec";
-import * as L from "monocle-ts/Lens";
+import { drawCodecErrors } from "../lib/util";
 
 export const ParkingSessionDocumentModel =
   C.intersect(ParkingSessionModel)(DocumentId);
 
 export type ParkingSessionWithId = C.TypeOf<typeof ParkingSessionDocumentModel>;
 
+export type FilteringContext = {
+  activeOnly: boolean;
+};
+
 export const fetchParkingSessionsRTE = pipe(
-  RTE.ask<ApiContext>(),
-  RTE.chainTaskEitherK(({ apiURL }) =>
+  RTE.ask<ApiContext & FilteringContext>(),
+  RTE.chainTaskEitherK(({ apiURL, activeOnly }) =>
     TE.tryCatch(
       () =>
-        fetch(`${apiURL}/listSessions`, { method: "POST" }).then((res) =>
-          res.json()
-        ),
+        fetch(`${apiURL}/listSessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active: activeOnly }),
+        }).then((res) => res.json()),
       E.toError
     )
   ),
@@ -108,48 +115,6 @@ export const LastUpdatedL = pipe(
 export const SessionsControllerContext =
   React.createContext<SessionsControllerState>(null as never);
 
-export type EagerUpdatesControllerState = {
-  updatedSessions: Map<string, ParkingSessionWithId>;
-  newSessions: Array<ParkingSessionWithId>;
-};
-export const EagerUpdatesControllerContext = React.createContext<
-  [
-    EagerUpdatesControllerState,
-    React.Dispatch<React.SetStateAction<EagerUpdatesControllerState>>,
-  ]
->(null as never);
-
-export const initialState: EagerUpdatesControllerState = {
-  updatedSessions: new Map(),
-  newSessions: [],
-};
-
-export const UpdatesSessionsL = pipe(
-  L.id<EagerUpdatesControllerState>(),
-  L.prop("updatedSessions")
-);
-export const NewSessionsL = pipe(
-  L.id<EagerUpdatesControllerState>(),
-  L.prop("newSessions")
-);
-
-export const EagerUpdatesController: React.FC<{
-  children?: React.ReactNode;
-}> = (props) => {
-  const [state, dispatch] =
-    React.useState<EagerUpdatesControllerState>(initialState);
-  const { sessions } = React.useContext(SessionsControllerContext);
-  useEffect(() => {
-    dispatch(initialState);
-  }, [sessions]);
-
-  return (
-    <EagerUpdatesControllerContext.Provider value={[state, dispatch]}>
-      {props.children}
-    </EagerUpdatesControllerContext.Provider>
-  );
-};
-
 export const fetchSessions = (
   dispatch: React.Dispatch<React.SetStateAction<SessionsControllerState>>
 ) =>
@@ -178,12 +143,20 @@ export const SessionsController: React.FC<{ children?: React.ReactNode }> = (
     lastUpdated: O.none,
   });
   const { apiURL } = React.useContext(ApplicationContext);
+  const [
+    {
+      sessions: { activeOnly },
+    },
+  ] = React.useContext(UIStateControllerContext);
 
   useEffect(() => {
-    fetchSessions(dispatch)({ apiURL })();
-    const interval = setInterval(fetchSessions(dispatch)({ apiURL }), 10000);
+    fetchSessions(dispatch)({ apiURL, activeOnly })();
+    const interval = setInterval(
+      fetchSessions(dispatch)({ apiURL, activeOnly }),
+      10000
+    );
     return () => clearInterval(interval);
-  }, [apiURL]);
+  }, [apiURL, activeOnly]);
 
   return (
     <SessionsControllerContext.Provider value={sessions}>

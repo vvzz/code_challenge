@@ -21,10 +21,9 @@ import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
 import React, { useEffect, useState } from "react";
 import { Button, Container, Navbar } from "react-bootstrap";
-import {
-  EagerUpdatesController,
-  SessionsController,
-} from "./controllers/SessionsController";
+import { UIStateController } from "./controllers/UIStateController";
+import { EagerUpdatesController } from "./controllers/EagerUpdatesController";
+import { SessionsController } from "./controllers/SessionsController";
 import { ApiContext } from "./contexts/ApiContext";
 import { LoginPage } from "./pages/LoginPage";
 import { SessionsPage } from "./pages/SessionsPage";
@@ -119,32 +118,34 @@ export const ApplicationNavBar: React.FC<{ onSignOut: () => void }> = (
   const appContext = React.useContext(ApplicationContext);
 
   return (
-    <Navbar expand="lg" className="bg-body-tertiary shadow-bottom">
-      <Container>
-        <Navbar.Brand href="#home">
-          <img
-            src="/parking.svg" // Replace with the path to your SVG logo
-            width="40"
-            height="40"
-            className="d-inline-block align-top"
-            alt="Logo"
-          />
-        </Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse className="justify-content-end">
-          <Navbar.Text>
-            Signed in as: <strong>{appContext.user.displayName}</strong>
-          </Navbar.Text>
-          <Button
-            variant="outline-secondary"
-            onClick={props.onSignOut}
-            style={{ marginLeft: "1em" }}
-          >
-            <FontAwesomeIcon icon={faSignOutAlt} />
-          </Button>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+    <>
+      <Navbar expand="lg" style={{ backgroundColor: "#213451" }}>
+        <Container>
+          <Navbar.Brand href="#home">
+            <img
+              src="/parking.svg" // Replace with the path to your SVG logo
+              width="40"
+              height="40"
+              className="d-inline-block align-top"
+              alt="Logo"
+            />
+          </Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <Navbar.Collapse className="justify-content-end">
+            <Navbar.Text>
+              Signed in as: <strong>{appContext.user.displayName}</strong>
+            </Navbar.Text>
+            <Button
+              variant="outline-secondary"
+              onClick={props.onSignOut}
+              style={{ marginLeft: "1em" }}
+            >
+              <FontAwesomeIcon icon={faSignOutAlt} />
+            </Button>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
+    </>
   );
 };
 
@@ -159,14 +160,14 @@ export const AuthenticatedApplication: React.FC<{
         apiURL: "http://127.0.0.1:5001/vend-park-challenge/us-central1/api",
       }}
     >
-      <div>
+      <UIStateController>
         <ApplicationNavBar onSignOut={onSignout} />
         <SessionsController>
           <EagerUpdatesController>
             <SessionsPage />
           </EagerUpdatesController>
         </SessionsController>
-      </div>
+      </UIStateController>
     </ApplicationContext.Provider>
   );
 };

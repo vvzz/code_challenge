@@ -1,11 +1,10 @@
 import { DocumentData, Firestore } from "firebase-admin/lib/firestore";
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
-import * as O from "fp-ts/Option";
 import * as RTE from "fp-ts/ReaderTaskEither";
 import * as TE from "fp-ts/TaskEither";
 import * as C from "io-ts/Codec";
-import { Filter } from "./models/Filter";
+import { FilterParams } from "./models/FilterParams";
 import { ParkingSession, ParkingSessionModel } from "./models/ParkingMetaData";
 
 export type FirestoreContext = {
@@ -40,36 +39,16 @@ export const readSnapshotDocument = (data: DocumentData) => {
   return { ...data, timeIn, timeOut };
 };
 
-export const listSessionsFromFirestore = (filter: Filter) =>
+export const listSessionsFromFirestore = (filter: FilterParams) =>
   pipe(
     RTE.ask<FirestoreContext>(),
     RTE.chainTaskEitherK(({ firestore }) =>
       TE.tryCatch(() => {
-        const collectionRef = firestore.collection(PARKING_SESSIONS_COLLECTION);
-
-        pipe(
-          filter.pageSize,
-          O.fold(
-            () => {},
-            (pageSize) => collectionRef.limit(pageSize)
-          )
-        );
-        pipe(
-          filter.start,
-          O.fold(
-            () => {},
-            (start) => collectionRef.startAt(start)
-          )
-        );
-
-        pipe(
-          filter.active,
-          O.filter((active) => active === true),
-          O.fold(
-            () => {},
-            () => collectionRef.where("timeOut", "==", null)
-          )
-        );
+        const collectionRef = filter.active
+          ? firestore
+              .collection(PARKING_SESSIONS_COLLECTION)
+              .where("timeOut", "==", null)
+          : firestore.collection(PARKING_SESSIONS_COLLECTION);
 
         return collectionRef
           .orderBy("timeIn", "desc")

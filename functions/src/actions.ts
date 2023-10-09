@@ -1,6 +1,7 @@
 import { sequenceT } from "fp-ts/Apply";
 import { pipe } from "fp-ts/function";
 import * as RTE from "fp-ts/ReaderTaskEither";
+import { toDataResponse } from "./lib/models/APISuccess";
 import {
   FunctionContext,
   handleCloudFunctionError,
@@ -13,7 +14,7 @@ import {
   updateSessionInFirestore,
 } from "./lib/firestore";
 import { DocumentId } from "./lib/models/DocumentId";
-import { FilterModel } from "./lib/models/Filter";
+import { FilterParamsModel } from "./lib/models/FilterParams";
 import {
   endSession,
   ParkingMetaDataModel,
@@ -32,7 +33,7 @@ export const getParkingSessionMetadataFromRequest = pipe(
 export const getListFilterFromRequest = pipe(
   RTE.ask<FunctionContext>(),
   RTE.map(({ req }) => req.body),
-  RTE.chainEitherK(FilterModel.decode),
+  RTE.chainEitherK(FilterParamsModel.decode),
   RTE.mapLeft(drawCodecErrors)
 );
 
@@ -50,6 +51,7 @@ export const createSession = pipe(
   RTE.map(([metadata, now]) => pipe(startSession(now), setMetadata(metadata))),
   RTE.chainW(createParkingSessionInFireStore),
   RTE.chainW(getSessionFromFirestore),
+  RTE.map(toDataResponse),
   RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)
 );
 
@@ -64,11 +66,13 @@ export const completeSession = pipe(
       RTE.chainW(() => getSessionFromFirestore(id))
     )
   ),
+  RTE.map(toDataResponse),
   RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)
 );
 
 export const listSessions = pipe(
   getListFilterFromRequest,
   RTE.chainW(listSessionsFromFirestore),
+  RTE.map(toDataResponse),
   RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)
 );

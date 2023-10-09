@@ -20,16 +20,24 @@ import {
   Table,
   Toast,
 } from "react-bootstrap";
+import {
+  ActiveOnlyL,
+  AddModeL,
+  UIStateController,
+  UIStateControllerContext,
+} from "../controllers/UIStateController";
+import {
+  EagerUpdatesControllerContext,
+  NewSessionsL,
+  UpdatesSessionsL,
+} from "../controllers/EagerUpdatesController";
 import { ApplicationContext } from "../App";
 import { isActive, ParkingMetadata } from "../lib/models/ParkingMetaData";
 import {
   completeParkingSessionRTE,
   createParkingSessionRTE,
-  EagerUpdatesControllerContext,
-  NewSessionsL,
   ParkingSessionWithId,
   SessionsControllerContext,
-  UpdatesSessionsL,
 } from "../controllers/SessionsController";
 import * as AD from "../lib/tubular/AsyncData";
 import * as RTE from "fp-ts/ReaderTaskEither";
@@ -248,7 +256,7 @@ export const SessionsTable: React.FC<{}> = (props) => {
   );
 };
 
-const AddParkingSesionForm: React.FC<{ onSuccess: () => void }> = () => {
+const AddParkingSesionForm: React.FC<{}> = () => {
   // Define state variables to capture form input values
   const [licensePlate, setLicensePlate] = useState("");
   const [state, setState] = useState("");
@@ -299,9 +307,8 @@ const AddParkingSesionForm: React.FC<{ onSuccess: () => void }> = () => {
   };
 
   return (
-    <Container>
+    <Container className="bg-secondary-subtle p-2">
       <Form
-        className="m-2"
         onSubmit={(ev) => {
           ev.preventDefault();
           handleAddParkingSession();
@@ -365,12 +372,35 @@ const AddParkingSesionForm: React.FC<{ onSuccess: () => void }> = () => {
 
 export default AddParkingSesionForm;
 
-export const SessionsPage: React.FC<{}> = (props) => {
-  const [addMode, setAddMode] = useState<boolean>(false);
+export const SessionsHeader: React.FC<{}> = (props) => {
+  const [
+    {
+      sessions: { addMode, activeOnly },
+    },
+    dispatch,
+  ] = React.useContext(UIStateControllerContext);
+
   const { lastUpdated } = React.useContext(SessionsControllerContext);
 
+  const handleToggleAddMode = React.useCallback(() => {
+    dispatch(
+      pipe(
+        AddModeL,
+        L.modify((currentMode) => !currentMode)
+      )
+    );
+  }, []);
+
+  const handleToggleActiveOnly = React.useCallback(() => {
+    dispatch(
+      pipe(
+        ActiveOnlyL,
+        L.modify((currentMode) => !currentMode)
+      )
+    );
+  }, []);
   return (
-    <Container className="mt-5">
+    <Row>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div className="d-flex align-items-center">
           <h2 className="mb-0">Sessions</h2>
@@ -379,15 +409,15 @@ export const SessionsPage: React.FC<{}> = (props) => {
               type="checkbox"
               className="form-check-input"
               id="activeOnlyCheckbox"
-              checked={false}
-              onChange={() => {}}
+              checked={activeOnly}
+              onChange={handleToggleActiveOnly}
             />
             <label className="form-check-label" htmlFor="activeOnlyCheckbox">
               Active Only
             </label>
           </div>
         </div>
-        <span className="badge bg-primary ">
+        <span className="badge bg-success-subtle ">
           Last Updated:{" "}
           {pipe(
             lastUpdated,
@@ -395,7 +425,11 @@ export const SessionsPage: React.FC<{}> = (props) => {
             O.getOrElse(() => "Never")
           )}
         </span>
-        <Button variant="secondary" onClick={() => setAddMode(!addMode)}>
+        <Button
+          variant="secondary"
+          className={"bg-secondary-subtle"}
+          onClick={handleToggleAddMode}
+        >
           {addMode ? (
             <FontAwesomeIcon icon={faChevronUp} />
           ) : (
@@ -403,20 +437,28 @@ export const SessionsPage: React.FC<{}> = (props) => {
           )}
         </Button>
       </div>
-      <Container>
-        <Row>
-          {addMode && (
-            <Row>
-              <Col className={"bg-secondary-subtle"}>
-                <AddParkingSesionForm onSuccess={() => setAddMode(false)} />
-              </Col>
-            </Row>
-          )}
-          <Col>
-            <SessionsTable />
-          </Col>
+    </Row>
+  );
+};
+
+export const SessionsPage: React.FC<{}> = (props) => {
+  const [
+    {
+      sessions: { addMode },
+    },
+  ] = React.useContext(UIStateControllerContext);
+
+  return (
+    <Container className={"pt-3 pb-3"}>
+      <SessionsHeader />
+      {addMode && (
+        <Row className={""}>
+          <AddParkingSesionForm />
         </Row>
-      </Container>
+      )}
+      <Row>
+        <SessionsTable />
+      </Row>
     </Container>
   );
 };
