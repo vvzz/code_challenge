@@ -1,14 +1,15 @@
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 
-export const LoginPage: React.FC<{ onLogin: () => void }> = (props) => {
+export const LoginPage: React.FC<{ onLogin: () => void }> = (
+  props
+) => {
   return (
     <Container
-      data-bs-theme="dark"
-      className="d-flex justify-content-center align-items-center rounded "
+      className="d-flex justify-content-center align-items-center rounded"
       style={{ height: "100vh", backgroundColor: "" }}
     >
-      <Row>
+      <Row className={"w-50"}>
         <Col xs={12} md={12}>
           <div className="rounded p-4 text-center  bg-secondary-subtle border">
             <img
@@ -24,8 +25,7 @@ export const LoginPage: React.FC<{ onLogin: () => void }> = (props) => {
               onClick={props.onLogin}
             >
               Sign In with Google
-            </Button>
-          </div>
+            </Button>          </div>
         </Col>
       </Row>
     </Container>

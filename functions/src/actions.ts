@@ -1,6 +1,7 @@
 import { sequenceT } from "fp-ts/Apply";
 import { pipe } from "fp-ts/function";
 import * as RTE from "fp-ts/ReaderTaskEither";
+import { authenticate } from "./lib/auth";
 import { toDataResponse } from "./lib/models/APISuccess";
 import {
   FunctionContext,
@@ -47,7 +48,13 @@ export const getIdFromRequest = pipe(
 );
 
 export const createSession = pipe(
-  sequenceT(RTE.ApplyPar)(getParkingSessionMetadataFromRequest, getCurrentTime),
+  authenticate,
+  RTE.chainW(() =>
+    sequenceT(RTE.ApplyPar)(
+      getParkingSessionMetadataFromRequest,
+      getCurrentTime
+    )
+  ),
   RTE.map(([metadata, now]) => pipe(startSession(now), setMetadata(metadata))),
   RTE.chainW(createParkingSessionInFireStore),
   RTE.chainW(getSessionFromFirestore),
@@ -56,7 +63,8 @@ export const createSession = pipe(
 );
 
 export const completeSession = pipe(
-  sequenceT(RTE.ApplyPar)(getIdFromRequest, getCurrentTime),
+  authenticate,
+  RTE.chainW(() => sequenceT(RTE.ApplyPar)(getIdFromRequest, getCurrentTime)),
   RTE.chainW(([{ id }, now]) =>
     pipe(
       now,
@@ -71,7 +79,8 @@ export const completeSession = pipe(
 );
 
 export const listSessions = pipe(
-  getListFilterFromRequest,
+  authenticate,
+  RTE.chainW(() => getListFilterFromRequest),
   RTE.chainW(listSessionsFromFirestore),
   RTE.map(toDataResponse),
   RTE.foldW(handleCloudFunctionError, handleCloudFunctionSuccess)

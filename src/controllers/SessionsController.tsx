@@ -10,7 +10,7 @@ import * as C from "io-ts/Codec";
 import * as L from "monocle-ts/Lens";
 import React, { useEffect, useState } from "react";
 import { UIStateControllerContext } from "../controllers/UIStateController";
-import { ApplicationContext } from "../App";
+import { ApplicationContext, AuthContext } from "../App";
 import { ApiContext } from "../contexts/ApiContext";
 import { APISuccessModel, getData } from "../lib/models/APISuccess";
 import { DocumentId } from "../lib/models/DocumentId";
@@ -31,17 +31,32 @@ export type FilteringContext = {
   activeOnly: boolean;
 };
 
+export const getIdToken = pipe(
+  RTE.ask<AuthContext>(),
+  RTE.chainTaskEitherK(({ user }) =>
+    TE.tryCatch(() => user.getIdToken(), E.toError)
+  )
+);
+
 export const fetchParkingSessionsRTE = pipe(
-  RTE.ask<ApiContext & FilteringContext>(),
-  RTE.chainTaskEitherK(({ apiURL, activeOnly }) =>
-    TE.tryCatch(
-      () =>
-        fetch(`${apiURL}/listSessions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ active: activeOnly }),
-        }).then((res) => res.json()),
-      E.toError
+  getIdToken,
+  RTE.chainW((token) =>
+    pipe(
+      RTE.ask<ApiContext & FilteringContext & AuthContext>(),
+      RTE.chainTaskEitherK(({ apiURL, activeOnly }) =>
+        TE.tryCatch(
+          () =>
+            fetch(`${apiURL}/listSessions`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ active: activeOnly }),
+            }).then((res) => res.json()),
+          E.toError
+        )
+      )
     )
   ),
   RTE.chainEitherKW(
@@ -142,7 +157,7 @@ export const SessionsController: React.FC<{ children?: React.ReactNode }> = (
     sessions: AD.none,
     lastUpdated: O.none,
   });
-  const { apiURL } = React.useContext(ApplicationContext);
+  const { apiURL, user } = React.useContext(ApplicationContext);
   const [
     {
       sessions: { activeOnly },
@@ -150,13 +165,13 @@ export const SessionsController: React.FC<{ children?: React.ReactNode }> = (
   ] = React.useContext(UIStateControllerContext);
 
   useEffect(() => {
-    fetchSessions(dispatch)({ apiURL, activeOnly })();
+    fetchSessions(dispatch)({ apiURL, activeOnly, user })();
     const interval = setInterval(
-      fetchSessions(dispatch)({ apiURL, activeOnly }),
+      fetchSessions(dispatch)({ apiURL, activeOnly, user }),
       10000
     );
     return () => clearInterval(interval);
-  }, [apiURL, activeOnly]);
+  }, [apiURL, activeOnly, user]);
 
   return (
     <SessionsControllerContext.Provider value={sessions}>
