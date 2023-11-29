@@ -8,6 +8,15 @@ focus on long term maintainability.
 The application is deployed at https://vend-park-challenge.web.app/ and should be accessible to any user with a Google
 account.
 
+## Runnning The application
+
+1. Install nvm `brew install nvm`
+2. Install Firebase `brew install firebase-cli`
+3. Login into Firebase `firebase login`
+
+To run local emulator:
+`firebase emulators:start`
+
 ## Technical overview
 
 The solution is implemented in typescript using Google's Firebase platform. I considered few different approaches and
@@ -36,20 +45,20 @@ same goals without extra maintenance overhead
 
 ## Out of Scope
 
-* ### Authorization
+- ### Authorization
   The application implements basic authentication and JWT verification but does not implement any RBAC or any other
   authorization mechanisms
-* ### Monorepo configuration
+- ### Monorepo configuration
   I believe that it's imperative to give developers ability to easily restructure and decompose code across the whole
-  codebase. The *lib* folder is designed to demonstrate a potential shareable codebase that could be exposed one of the
+  codebase. The _lib_ folder is designed to demonstrate a potential shareable codebase that could be exposed one of the
   shared modules.
-* ### Devops and immutable infrastructure
+- ### Devops and immutable infrastructure
   Firebase provides some built in tools for quickly creating and deploying infrastucture which is sufficient for this
   project, but in a production environment I would like to see the infrastructure fully defined in code.
-* ### Logging and instrumentation
+- ### Logging and instrumentation
   The code leaves provisions for easily adding centralized logging/tracing, but it is not implemented in the scope of
   this work
-* ### Pagination
+- ### Pagination
   Given a potentially large amount of sessions accumulating over time for a given parking facility, I would recommend
   an approach combining easy filtering by important session parameters(e.g. plate, car make, color, session duration,
   date) and pagination logic. Just pagination alone would not lead to good UX
