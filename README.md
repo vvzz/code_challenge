@@ -1,4 +1,4 @@
-# Vend Park Code Challenge
+# Functional Full Stack Project Code Challenge
 
 ## Overview
 
