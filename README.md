@@ -5,9 +5,6 @@
 This project demonstrates my take on setting up and designing a continuously evolving application with a
 focus on long term maintainability.
 
-The application is deployed at https://vend-park-challenge.web.app/ and should be accessible to any user with a Google
-account.
-
 ## Runnning The application
 
 1. Install nvm `brew install nvm`
